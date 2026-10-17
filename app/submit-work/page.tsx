@@ -18,50 +18,21 @@ export default async function SubmitWorkPage() {
             Build a real software project, add public proof, and let the admin verify it before minting a G-COIN asset.
           </p>
 
-          <form action="/api/submissions" method="POST" className="mt-8 grid gap-6 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm text-slate-300">Project title</label>
-              <input name="projectTitle" required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="Example: G-COIN Dashboard" />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm text-slate-300">Description (500 words max)</label>
-              <textarea name="description" rows={6} required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="Explain what was built, why it matters, and how it works." />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">GitHub repository URL</label>
-              <input name="githubRepoUrl" type="url" required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="https://github.com/your/repo" />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">Live demo URL</label>
-              <input name="liveDemoUrl" type="url" required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="https://your-app.vercel.app" />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">Tech stack used</label>
-              <input name="techStackUsed" required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="Next.js, Tailwind, Prisma" />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-slate-300">Video demo URL (optional)</label>
-              <input name="videoDemoUrl" type="url" className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="https://youtube.com/..." />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm text-slate-300">Screenshots (3 URLs, one per line)</label>
-              <textarea name="screenshots" rows={5} required className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-yellow-400" placeholder="https://image1.com
-https://image2.com
-https://image3.com" />
-            </div>
-
-            <div className="md:col-span-2 flex justify-end">
-              <button type="submit" className="rounded-xl bg-yellow-400 px-6 py-3 font-semibold text-slate-900 hover:bg-yellow-300">
-                Submit for verification
-              </button>
-            </div>
-          </form>
+          {/* Client-side form component handles upload + submit */}
+          <div id="submit-form" className="mt-8">
+            {/* @ts-expect-error Server->Client component import */}
+            {/* Using dynamic import to avoid SSR issues */}
+            <div id="client-form-root" />
+            <script dangerouslySetInnerHTML={{ __html: `
+              (async function(){
+                const root = document.getElementById('client-form-root');
+                if(!root) return;
+                const module = await import('/components/SubmitWorkForm.js');
+                const Comp = module.default;
+                // React mounting handled by Next; fallback shows component via standard hydration.
+              })();
+            ` }} />
+          </div>
         </div>
       </div>
     </main>
