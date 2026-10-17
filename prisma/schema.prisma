@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Rarity {
+  LEGENDARY
+  EPIC
+  RARE
+}
+
+enum TradeStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  submissions  Submission[]
+  mintedAssets MintedAsset[]
+  stakes       Stake[]
+  buyerTrades  Trade[]       @relation("BuyerTrades")
+  sellerTrades Trade[]       @relation("SellerTrades")
+}
+
+model Submission {
+  id                 String            @id @default(cuid())
+  userId             String
+  user               User              @relation(fields: [userId], references: [id])
+  projectTitle       String
+  description        String
+  githubRepoUrl      String
+  liveDemoUrl        String?
+  techStackUsed      String
+  videoDemoUrl       String?
+  screenshots        String
+  status             SubmissionStatus  @default(PENDING)
+  reason             String?
+  workHash           String
+  mintToken          String?
+  mintTokenExpiresAt DateTime?
+  approvedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  mintedAsset        MintedAsset?
+
+  @@index([status])
+}
+
+model MintedAsset {
+  id          String         @id @default(cuid())
+  submissionId String         @unique
+  submission  Submission     @relation(fields: [submissionId], references: [id])
+  ownerId     String
+  owner       User           @relation(fields: [ownerId], references: [id])
+  editionNumber Int
+  rarity      Rarity
+  totalSupply Int           @default(100)
+  mintPrice   Float          @default(149)
+  salePrice   Float?
+  isStaked    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  trades      Trade[]
+  stakes      Stake[]
+  RoyaltyLedger RoyaltyLedger[]
+}
+
+model Trade {
+  id        String      @id @default(cuid())
+  assetId   String
+  asset     MintedAsset @relation(fields: [assetId], references: [id])
+  buyerId   String?
+  buyer     User?       @relation("BuyerTrades", fields: [buyerId], references: [id])
+  sellerId  String?
+  seller    User?       @relation("SellerTrades", fields: [sellerId], references: [id])
+  price     Float
+  feePercent Float      @default(4.5)
+  status    TradeStatus @default(COMPLETED)
+  createdAt DateTime    @default(now())
+}
+
+model Stake {
+  id         String       @id @default(cuid())
+  assetId    String
+  asset      MintedAsset  @relation(fields: [assetId], references: [id])
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  amount     Float        @default(0)
+  lockedUntil DateTime?
+  createdAt  DateTime     @default(now())
+}
+
+model RoyaltyLedger {
+  id        String       @id @default(cuid())
+  assetId   String
+  asset     MintedAsset  @relation(fields: [assetId], references: [id])
+  holderId  String
+  amount    Float
+  reason    String
+  createdAt DateTime     @default(now())
+}

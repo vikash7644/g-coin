@@ -1,0 +1,70 @@
+import crypto from 'crypto';
+import { User } from '@prisma/client';
+import { cookies } from 'next/headers';
+
+import { prisma } from './db';
+
+export const SESSION_COOKIE = 'gcoin_session';
+const AUTH_SECRET = process.env.AUTH_SECRET || 'gcoin-local-secret';
+
+export function signSession(payload: Record<string, unknown>) {
+  const json = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(json).digest('base64url');
+  return `${json}.${signature}`;
+}
+
+export function verifySession(token: string) {
+  if (!token || !token.includes('.')) return null;
+
+  const [encoded, signature] = token.split('.');
+  const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(encoded).digest('base64url');
+
+  if (signature !== expectedSignature) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as {
+      userId: string;
+      email: string;
+      role: string;
+      username: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getCurrentUser() {
+  const cookie = cookies().get(SESSION_COOKIE)?.value;
+  if (!cookie) return null;
+
+  const signed = verifySession(cookie);
+  if (!signed?.userId) return null;
+
+  return prisma.user.findUnique({ where: { id: signed.userId } });
+}
+
+export function setSessionCookie(user: Pick<User, 'id' | 'email' | 'role' | 'username'>) {
+  const token = signSession({ userId: user.id, email: user.email, role: user.role, username: user.username });
+
+  cookies().set({
+    name: SESSION_COOKIE,
+    value: token,
+    httpOnly: true,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+}
+
+export function clearSessionCookie() {
+  cookies().set({
+    name: SESSION_COOKIE,
+    value: '',
+    maxAge: 0,
+    path: '/',
+    httpOnly: true,
+  });
+}
