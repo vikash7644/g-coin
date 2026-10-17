@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "next.config.mjs", "use": "@vercel/next" }
+  ],
+  "routes": [
+    { "src": "/_s3/(.*)", "dest": "/_s3/$1" }
+  ]
+}
